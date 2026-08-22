@@ -10,7 +10,8 @@ import {
 export type Issue = {
   code: string
   label: string
-  category: "seo" | "design"
+  // The three dimensions the modernization ranking is built from.
+  category: "responsive" | "device" | "palette"
   severity: "low" | "medium" | "high"
 }
 
@@ -24,10 +25,12 @@ export const crawlSites = pgTable("crawl_sites", {
   sourceUrl: text("source_url"),
   httpStatus: integer("http_status"),
   title: text("title"),
-  // 0-100, higher means it needs modernization more urgently
+  // 0-100, higher means it needs modernization more urgently.
+  // overall is a weighted blend of the three dimensions below.
   overallScore: integer("overall_score"),
-  seoScore: integer("seo_score"),
-  designScore: integer("design_score"),
+  responsiveScore: integer("responsive_score"),
+  deviceScore: integer("device_score"),
+  paletteScore: integer("palette_score"),
   issues: jsonb("issues").$type<Issue[]>().default([]),
   error: text("error"),
   createdAt: timestamp("created_at", { withTimezone: true })
