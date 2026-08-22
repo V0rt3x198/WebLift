@@ -275,11 +275,32 @@ export async function resetCrawl() {
 
 export async function getSubmissionHistory() {
   return db
-    .select()
+    .select({
+      id: urlSubmissions.id,
+      batchId: urlSubmissions.batchId,
+      url: urlSubmissions.url,
+      domain: urlSubmissions.domain,
+      submittedAt: urlSubmissions.submittedAt,
+      // Live scan results, joined from crawl_sites by URL. Null until scanned.
+      status: crawlSites.status,
+      httpStatus: crawlSites.httpStatus,
+      title: crawlSites.title,
+      overallScore: crawlSites.overallScore,
+      seoScore: crawlSites.seoScore,
+      designScore: crawlSites.designScore,
+      issues: crawlSites.issues,
+      error: crawlSites.error,
+      analyzedAt: crawlSites.analyzedAt,
+    })
     .from(urlSubmissions)
+    .leftJoin(crawlSites, eq(crawlSites.url, urlSubmissions.url))
     .orderBy(desc(urlSubmissions.submittedAt), desc(urlSubmissions.id))
     .limit(500)
 }
+
+export type SubmissionHistoryRow = Awaited<
+  ReturnType<typeof getSubmissionHistory>
+>[number]
 
 export async function clearSubmissionHistory() {
   await db.delete(urlSubmissions)
