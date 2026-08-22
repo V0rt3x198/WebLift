@@ -3,7 +3,8 @@
 import { and, count, desc, eq, gte, isNotNull, lte, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
-import { crawlSites } from "@/lib/db/schema"
+import { crawlSites, urlSubmissions } from "@/lib/db/schema"
+import { randomUUID } from "node:crypto"
 import { analyzePage } from "@/lib/crawler/analyze"
 import { isAllowed } from "@/lib/crawler/robots"
 
@@ -67,6 +68,17 @@ export async function seedCrawl(formData: FormData) {
   if (seeds.length === 0) {
     return { ok: false, message: "No valid URLs found." }
   }
+
+  // Record every submitted URL to the append-only history, preserving order and
+  // duplicates. All URLs from this submission share one batch id.
+  const batchId = randomUUID()
+  await db.insert(urlSubmissions).values(
+    seeds.map((url) => ({
+      batchId,
+      url,
+      domain: domainOf(url) ?? url,
+    })),
+  )
 
   const rows = Array.from(new Set(seeds)).map((url) => ({
     url,
@@ -257,6 +269,20 @@ export async function getLeads(minScore = 0) {
 
 export async function resetCrawl() {
   await db.delete(crawlSites)
+  revalidatePath("/")
+  return { ok: true }
+}
+
+export async function getSubmissionHistory() {
+  return db
+    .select()
+    .from(urlSubmissions)
+    .orderBy(desc(urlSubmissions.submittedAt), desc(urlSubmissions.id))
+    .limit(500)
+}
+
+export async function clearSubmissionHistory() {
+  await db.delete(urlSubmissions)
   revalidatePath("/")
   return { ok: true }
 }

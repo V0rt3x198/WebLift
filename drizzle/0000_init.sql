@@ -28,3 +28,16 @@ CREATE INDEX IF NOT EXISTS crawl_sites_queue_idx
 -- Supports the leads listing, which sorts by score descending.
 CREATE INDEX IF NOT EXISTS crawl_sites_score_idx
   ON crawl_sites (overall_score DESC);
+
+-- Append-only history of every submitted URL. Mirrors lib/db/schema.ts.
+CREATE TABLE IF NOT EXISTS url_submissions (
+  id           serial PRIMARY KEY,
+  batch_id     text NOT NULL,
+  url          text NOT NULL,
+  domain       text NOT NULL,
+  submitted_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Supports the history listing, which sorts by newest first.
+CREATE INDEX IF NOT EXISTS url_submissions_submitted_idx
+  ON url_submissions (submitted_at DESC);

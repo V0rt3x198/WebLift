@@ -37,3 +37,18 @@ export const crawlSites = pgTable("crawl_sites", {
 })
 
 export type CrawlSite = typeof crawlSites.$inferSelect
+
+// Append-only log of every URL the user submits, grouped by submission batch.
+// Unlike crawl_sites, this keeps duplicates so the full history is preserved.
+export const urlSubmissions = pgTable("url_submissions", {
+  id: serial("id").primaryKey(),
+  // Groups all URLs that were submitted together in one "Queue seeds" action.
+  batchId: text("batch_id").notNull(),
+  url: text("url").notNull(),
+  domain: text("domain").notNull(),
+  submittedAt: timestamp("submitted_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+})
+
+export type UrlSubmission = typeof urlSubmissions.$inferSelect
